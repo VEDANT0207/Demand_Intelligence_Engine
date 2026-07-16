@@ -3,6 +3,7 @@ import numpy as np
 
 from src.logger.logger import logging
 
+
 class PredictionFeatureEngineering:
     """
     Generates model-ready features from incomplete business requests.
@@ -13,7 +14,7 @@ class PredictionFeatureEngineering:
         "Promo": 0,
         "Open": 1,
         "StateHoliday": "0",
-        "SchoolHoliday": 0
+        "SchoolHoliday": 0,
     }
 
     def __init__(self, config):
@@ -23,7 +24,7 @@ class PredictionFeatureEngineering:
         self.historical_data = None
         self.calendar_data = None
         self.store_data = None
-        self.store_history_df= None
+        self.store_history_df = None
 
         self.load_reference_data()
 
@@ -34,45 +35,31 @@ class PredictionFeatureEngineering:
         """
 
         self.historical_data = pd.read_csv(
-            self.config["historical_data_path"],
-            parse_dates=["Date"]
+            self.config["historical_data_path"], parse_dates=["Date"]
         )
 
         self.calendar_data = pd.read_csv(
-            self.config["calendar_data_path"],
-            parse_dates=["Date"]
+            self.config["calendar_data_path"], parse_dates=["Date"]
         )
 
-        self.calendar_data["DayOfWeek"] = (
-            self.calendar_data["Date"].dt.dayofweek + 1
-        )
+        self.calendar_data["DayOfWeek"] = self.calendar_data["Date"].dt.dayofweek + 1
 
         self.calendar_data["WeekOfYear"] = (
-            self.calendar_data["Date"]
-            .dt.isocalendar()
-            .week
-            .astype(int)
+            self.calendar_data["Date"].dt.isocalendar().week.astype(int)
         )
 
-
-         # Precompute calendar features once
+        # Precompute calendar features once
         self.historical_data["DayOfWeek"] = (
             self.historical_data["Date"].dt.dayofweek + 1
         )
 
         self.historical_data["WeekOfYear"] = (
-            self.historical_data["Date"]
-            .dt.isocalendar()
-            .week
-            .astype(int)
+            self.historical_data["Date"].dt.isocalendar().week.astype(int)
         )
 
-        self.store_data = pd.read_csv(
-            self.config["store_data_path"]
-        )
+        self.store_data = pd.read_csv(self.config["store_data_path"])
 
-    
-    def infer_store_open_status(self,request_df):
+    def infer_store_open_status(self, request_df):
         """
         Infers whether the store is open for future dates.
         """
@@ -92,16 +79,12 @@ class PredictionFeatureEngineering:
         # Exact date
 
         exact_record = calendar_data[
-            (calendar_data["Store"] == store)
-            &
-            (calendar_data["Date"] == request_date)
+            (calendar_data["Store"] == store) & (calendar_data["Date"] == request_date)
         ]
 
         if not exact_record.empty:
 
-            request_df["Open"] = (
-                exact_record.iloc[0]["Open"]
-            )
+            request_df["Open"] = exact_record.iloc[0]["Open"]
 
             return request_df
 
@@ -109,19 +92,13 @@ class PredictionFeatureEngineering:
 
         month_day_record = calendar_data[
             (calendar_data["Store"] == store)
-            &
-            (calendar_data["Date"].dt.month == month)
-            &
-            (calendar_data["Date"].dt.day == day)
+            & (calendar_data["Date"].dt.month == month)
+            & (calendar_data["Date"].dt.day == day)
         ]
 
         if not month_day_record.empty:
 
-            request_df["Open"] = (
-                month_day_record["Open"]
-                .mode()
-                .iloc[0]
-            )
+            request_df["Open"] = month_day_record["Open"].mode().iloc[0]
 
             return request_df
 
@@ -129,17 +106,12 @@ class PredictionFeatureEngineering:
 
         day_record = calendar_data[
             (calendar_data["Store"] == store)
-            &
-            (calendar_data["DayOfWeek"] == day_of_week)
+            & (calendar_data["DayOfWeek"] == day_of_week)
         ]
 
         if not day_record.empty:
 
-            request_df["Open"] = (
-                day_record["Open"]
-                .mode()
-                .iloc[0]
-            )
+            request_df["Open"] = day_record["Open"].mode().iloc[0]
 
             return request_df
 
@@ -147,7 +119,6 @@ class PredictionFeatureEngineering:
         request_df["Open"] = 1
 
         return request_df
-
 
     def complete_business_request(self, request):
         """
@@ -166,9 +137,7 @@ class PredictionFeatureEngineering:
         """
 
         if "Store" not in request:
-            raise ValueError(
-                "'Store' is required for prediction."
-            )
+            raise ValueError("'Store' is required for prediction.")
 
         completed_request = self.DEFAULT_REQUEST.copy()
 
@@ -176,50 +145,31 @@ class PredictionFeatureEngineering:
 
         request_df = pd.DataFrame([completed_request])
 
-        request_df["Date"] = pd.to_datetime(
-            request_df["Date"]
-        )
+        request_df["Date"] = pd.to_datetime(request_df["Date"])
 
         request_df["Store"] = (
-            request_df["Store"]
-            .astype(str)
-            .str.extract(r"(\d+)")
-            .iloc[:, 0]
-            .astype(int)
+            request_df["Store"].astype(str).str.extract(r"(\d+)").iloc[:, 0].astype(int)
         )
 
-        if "Promo" not in request_df.columns:   
+        if "Promo" not in request_df.columns:
             request_df["Promo"] = 0
 
         request_df["Promo"] = (
-            pd.to_numeric(
-                request_df["Promo"],
-                errors="coerce"
-            )
-            .fillna(0)
-            .astype(int)
+            pd.to_numeric(request_df["Promo"], errors="coerce").fillna(0).astype(int)
         )
 
         if "Open" not in request_df.columns:
             request_df["Open"] = 1
 
         request_df["Open"] = (
-            pd.to_numeric(
-                request_df["Open"],
-                errors="coerce"
-            )
-            .fillna(1)
-            .astype(int)
+            pd.to_numeric(request_df["Open"], errors="coerce").fillna(1).astype(int)
         )
 
         if "SchoolHoliday" not in request_df.columns:
             request_df["SchoolHoliday"] = 0
 
         request_df["SchoolHoliday"] = (
-            pd.to_numeric(
-                request_df["SchoolHoliday"],
-                errors="coerce"
-            )
+            pd.to_numeric(request_df["SchoolHoliday"], errors="coerce")
             .fillna(0)
             .astype(int)
         )
@@ -227,18 +177,12 @@ class PredictionFeatureEngineering:
         if "StateHoliday" not in request_df.columns:
             request_df["StateHoliday"] = "0"
 
-        request_df["StateHoliday"] = (
-            request_df["StateHoliday"]
-            .fillna("0")
-            .astype(str)
-        )
+        request_df["StateHoliday"] = request_df["StateHoliday"].fillna("0").astype(str)
 
-        request_df = self.infer_store_open_status(
-            request_df
-        )
+        request_df = self.infer_store_open_status(request_df)
 
         return request_df
-    
+
     def create_temporal_features(self, request_df):
         """
         Creates temporal features from the Date column.
@@ -254,21 +198,13 @@ class PredictionFeatureEngineering:
 
         request_df["DayOfWeek"] = request_df["Date"].dt.dayofweek + 1
 
-        request_df["WeekOfYear"] = (
-            request_df["Date"]
-            .dt.isocalendar()
-            .week
-            .astype(int)
-        )
+        request_df["WeekOfYear"] = request_df["Date"].dt.isocalendar().week.astype(int)
 
         request_df["Quarter"] = request_df["Date"].dt.quarter
 
-        request_df["IsWeekend"] = (
-            request_df["DayOfWeek"] >= 6
-        ).astype(int)
+        request_df["IsWeekend"] = (request_df["DayOfWeek"] >= 6).astype(int)
 
         return request_df
-    
 
     def create_store_features(self, request_df):
         """
@@ -277,14 +213,9 @@ class PredictionFeatureEngineering:
 
         request_df = request_df.copy()
 
-        request_df = request_df.merge(
-            self.store_data,
-            on="Store",
-            how="left"
-        )
+        request_df = request_df.merge(self.store_data, on="Store", how="left")
 
         return request_df
-    
 
     def create_competition_features(self, request_df):
         """
@@ -294,13 +225,13 @@ class PredictionFeatureEngineering:
         request_df = request_df.copy()
 
         # Handle missing competition opening information
-        request_df["CompetitionOpenSinceMonth"] = (
-            request_df["CompetitionOpenSinceMonth"].fillna(1)
-        )
+        request_df["CompetitionOpenSinceMonth"] = request_df[
+            "CompetitionOpenSinceMonth"
+        ].fillna(1)
 
-        request_df["CompetitionOpenSinceYear"] = (
-            request_df["CompetitionOpenSinceYear"].fillna(1900)
-        )
+        request_df["CompetitionOpenSinceYear"] = request_df[
+            "CompetitionOpenSinceYear"
+        ].fillna(1900)
 
         # Create competition opening date
         request_df["CompetitionOpenDate"] = pd.to_datetime(
@@ -314,14 +245,9 @@ class PredictionFeatureEngineering:
 
         # Calculate competition age in months
         request_df["CompetitionAgeMonths"] = (
-            (
-                request_df["Date"].dt.year
-                - request_df["CompetitionOpenDate"].dt.year
-            ) * 12
-            + (
-                request_df["Date"].dt.month
-                - request_df["CompetitionOpenDate"].dt.month
-            )
+            request_df["Date"].dt.year - request_df["CompetitionOpenDate"].dt.year
+        ) * 12 + (
+            request_df["Date"].dt.month - request_df["CompetitionOpenDate"].dt.month
         )
 
         # Indicator for whether competition opening date is known
@@ -341,7 +267,6 @@ class PredictionFeatureEngineering:
         ] = 0
 
         return request_df
-    
 
     def create_promo_features(self, request_df):
         """
@@ -356,22 +281,15 @@ class PredictionFeatureEngineering:
         request_df = request_df.copy()
 
         # Handle missing Promo2 information
-        request_df["Promo2SinceWeek"] = (
-            request_df["Promo2SinceWeek"].fillna(1)
-        )
+        request_df["Promo2SinceWeek"] = request_df["Promo2SinceWeek"].fillna(1)
 
-        request_df["Promo2SinceYear"] = (
-            request_df["Promo2SinceYear"].fillna(1900)
-        )
+        request_df["Promo2SinceYear"] = request_df["Promo2SinceYear"].fillna(1900)
 
         # Create Promo2 start date
         request_df["Promo2StartDate"] = pd.to_datetime(
             request_df["Promo2SinceYear"].astype(int).astype(str)
             + "-W"
-            + request_df["Promo2SinceWeek"]
-            .astype(int)
-            .astype(str)
-            .str.zfill(2)
+            + request_df["Promo2SinceWeek"].astype(int).astype(str).str.zfill(2)
             + "-1",
             format="%Y-W%W-%w",
             errors="coerce",
@@ -379,21 +297,11 @@ class PredictionFeatureEngineering:
 
         # Calculate Promo2 age in months
         request_df["Promo2AgeMonths"] = (
-            (
-                request_df["Date"].dt.year
-                - request_df["Promo2StartDate"].dt.year
-            )
-            * 12
-            + (
-                request_df["Date"].dt.month
-                - request_df["Promo2StartDate"].dt.month
-            )
-        )
+            request_df["Date"].dt.year - request_df["Promo2StartDate"].dt.year
+        ) * 12 + (request_df["Date"].dt.month - request_df["Promo2StartDate"].dt.month)
 
         # Indicator for whether Promo2 is active
-        request_df["Promo2Active"] = (
-            request_df["Promo2AgeMonths"] >= 0
-        ).astype(int)
+        request_df["Promo2Active"] = (request_df["Promo2AgeMonths"] >= 0).astype(int)
 
         # Replace negative Promo2 ages with zero
         request_df.loc[
@@ -401,20 +309,13 @@ class PredictionFeatureEngineering:
             "Promo2AgeMonths",
         ] = 0
 
-        request_df.loc[
-            request_df["Promo2SinceYear"] == 1900,
-            "Promo2AgeMonths"
-        ] = 0
+        request_df.loc[request_df["Promo2SinceYear"] == 1900, "Promo2AgeMonths"] = 0
 
-        request_df.loc[
-            request_df["Promo2SinceYear"] == 1900,
-            "Promo2Active"
-        ] = 0
+        request_df.loc[request_df["Promo2SinceYear"] == 1900, "Promo2Active"] = 0
 
         return request_df
-    
 
-    def get_store_history(self,store,prediction_date,history_df=None):
+    def get_store_history(self, store, prediction_date, history_df=None):
         """
         Retrieves historical records for a store before the
         prediction date.
@@ -440,21 +341,16 @@ class PredictionFeatureEngineering:
             history_df = self.historical_data
 
         history = history_df[
-            (history_df["Store"] == store)
-            &
-            (history_df["Date"] < prediction_date)
+            (history_df["Store"] == store) & (history_df["Date"] < prediction_date)
         ].copy()
 
-        history = history.sort_values(
-            by="Date"
-        ).reset_index(drop=True)
+        history = history.sort_values(by="Date").reset_index(drop=True)
 
         self.store_history_df = history.copy()
 
         return history
-    
 
-    def create_customer_historical_features(self,request_df,history_df=None):
+    def create_customer_historical_features(self, request_df, history_df=None):
         """
         Creates historical customer-based features.
 
@@ -470,33 +366,32 @@ class PredictionFeatureEngineering:
 
         prediction_date = request_df.loc[0, "Date"]
 
-        customer_history = self.get_store_history(store,prediction_date,history_df)["Customers"]
+        customer_history = self.get_store_history(store, prediction_date, history_df)[
+            "Customers"
+        ]
 
         # Customer Lag Features
         for lag in [7, 14, 28]:
 
-            request_df[f"Customers_Lag_{lag}"] = (
-                customer_history.iloc[-lag]
-            )
+            request_df[f"Customers_Lag_{lag}"] = customer_history.iloc[-lag]
 
         # Customer Rolling Mean Features
         for window in [7, 14, 28]:
 
-            request_df[f"Customers_RollingMean_{window}"] = (
-                customer_history.tail(window).mean()
-            )
+            request_df[f"Customers_RollingMean_{window}"] = customer_history.tail(
+                window
+            ).mean()
 
         # Customer Rolling Standard Deviation Features
         for window in [7, 14, 28]:
 
-            request_df[f"Customers_RollingStd_{window}"] = (
-                customer_history.tail(window).std()
-            )
+            request_df[f"Customers_RollingStd_{window}"] = customer_history.tail(
+                window
+            ).std()
 
         return request_df
-    
 
-    def create_sales_historical_features(self,request_df,history_df=None):
+    def create_sales_historical_features(self, request_df, history_df=None):
         """
         Creates historical sales-based features.
 
@@ -512,33 +407,30 @@ class PredictionFeatureEngineering:
 
         prediction_date = request_df.loc[0, "Date"]
 
-        sales_history = self.get_store_history(store,prediction_date,history_df)["Sales"]
+        sales_history = self.get_store_history(store, prediction_date, history_df)[
+            "Sales"
+        ]
 
         # Sales Lag Features
         for lag in [7, 14, 28]:
 
-            request_df[f"Sales_Lag_{lag}"] = (
-                sales_history.iloc[-lag]
-            )
+            request_df[f"Sales_Lag_{lag}"] = sales_history.iloc[-lag]
 
         # Sales Rolling Mean Features
         for window in [7, 14, 28]:
 
-            request_df[f"Sales_RollingMean_{window}"] = (
-                sales_history.tail(window).mean()
-            )
+            request_df[f"Sales_RollingMean_{window}"] = sales_history.tail(
+                window
+            ).mean()
 
         # Sales Rolling Standard Deviation Features
         for window in [7, 14, 28]:
 
-            request_df[f"Sales_RollingStd_{window}"] = (
-                sales_history.tail(window).std()
-            )
+            request_df[f"Sales_RollingStd_{window}"] = sales_history.tail(window).std()
 
         return request_df
-    
 
-    def prepare_features(self,business_request,history_df=None):
+    def prepare_features(self, business_request, history_df=None):
         """
         Executes the complete prediction feature engineering
         pipeline.
@@ -554,37 +446,21 @@ class PredictionFeatureEngineering:
             Fully engineered feature set ready for prediction.
         """
 
-        request_df = self.complete_business_request(
-            business_request
-        )
+        request_df = self.complete_business_request(business_request)
 
-        request_df = self.create_temporal_features(
-            request_df
-        )
+        request_df = self.create_temporal_features(request_df)
 
-        request_df = self.create_store_features(
-            request_df
-        )
+        request_df = self.create_store_features(request_df)
 
-        request_df = self.create_competition_features(
-            request_df
-        )
+        request_df = self.create_competition_features(request_df)
 
-        request_df = self.create_promo_features(
-            request_df
-        )
+        request_df = self.create_promo_features(request_df)
 
-        request_df = self.create_customer_historical_features(
-            request_df,
-            history_df
-        )
+        request_df = self.create_customer_historical_features(request_df, history_df)
 
-        request_df = self.create_sales_historical_features(
-            request_df,history_df
-        )
+        request_df = self.create_sales_historical_features(request_df, history_df)
 
         return request_df
-
 
 
 # from src.config.configuration import ConfigurationManager
@@ -608,6 +484,3 @@ class PredictionFeatureEngineering:
 # request_df = feature_engineering.create_customer_historical_features(request_df)
 
 # print(request_df)
-
-
-

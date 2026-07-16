@@ -59,17 +59,18 @@ class DataIngestion:
                 Training DataFrame and Store DataFrame.
         """
 
-        train_df = pd.read_csv(self.config["train_data_path"], dtype={"StateHoliday": str})
+        train_df = pd.read_csv(
+            self.config["train_data_path"], dtype={"StateHoliday": str}
+        )
         store_df = pd.read_csv(self.config["store_data_path"])
 
         return train_df, store_df
-    
 
     def validate_data(
-    self,
-    train_df: pd.DataFrame,
-    store_df: pd.DataFrame,
-) -> None:
+        self,
+        train_df: pd.DataFrame,
+        store_df: pd.DataFrame,
+    ) -> None:
         """
         Validate the training and store datasets.
 
@@ -116,31 +117,29 @@ class DataIngestion:
                 f"Missing columns in store dataset: {missing_store_columns}"
             )
 
-    
     def merge_data(
-            self,
-            train_df: pd.DataFrame,
-            store_df: pd.DataFrame,
-        ) -> pd.DataFrame:
-            """
-            Merge the training and store datasets.
+        self,
+        train_df: pd.DataFrame,
+        store_df: pd.DataFrame,
+    ) -> pd.DataFrame:
+        """
+        Merge the training and store datasets.
 
-            Args:
-                train_df (pd.DataFrame): Training dataset.
-                store_df (pd.DataFrame): Store dataset.
+        Args:
+            train_df (pd.DataFrame): Training dataset.
+            store_df (pd.DataFrame): Store dataset.
 
-            Returns:
-                pd.DataFrame: Merged dataset.
-            """
+        Returns:
+            pd.DataFrame: Merged dataset.
+        """
 
-            merged_df = train_df.merge(
-                store_df,
-                on="Store",
-                how="left",
-            )
+        merged_df = train_df.merge(
+            store_df,
+            on="Store",
+            how="left",
+        )
 
-            return merged_df
-        
+        return merged_df
 
     def save_data(self, merged_df: pd.DataFrame) -> Path:
         """
@@ -162,7 +161,6 @@ class DataIngestion:
         merged_df.to_csv(output_path, index=False)
 
         return output_path
-
 
     def initiate_data_ingestion(self) -> Path:
         """
@@ -191,14 +189,13 @@ class DataIngestion:
         output_path = self.save_data(merged_df)
 
         return output_path
-    
-    
+
 
 if __name__ == "__main__":
     config = ConfigurationManager().get_data_ingestion_config()
 
     ingestion = DataIngestion(config)
 
-    output_path = ingestion.initiate_data_ingestion() 
-    print(f"Data Ingestion completed successfully!") 
+    output_path = ingestion.initiate_data_ingestion()
+    print(f"Data Ingestion completed successfully!")
     print(f"Merged dataset saved at:\n{output_path}")

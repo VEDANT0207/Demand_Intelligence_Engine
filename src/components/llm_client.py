@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from src.config.configuration import ConfigurationManager
 
+
 class LLMClient:
 
     def __init__(self):
@@ -19,8 +20,6 @@ class LLMClient:
         self.max_tokens = self.config["max_tokens"]
 
         self.client = self._create_client()
-
-
 
     def _create_client(self):
         """
@@ -42,25 +41,14 @@ class LLMClient:
             api_key = os.getenv("GROQ_API_KEY")
 
             if not api_key:
-                raise ValueError(
-                    "GROQ_API_KEY not found in environment variables."
-                )
+                raise ValueError("GROQ_API_KEY not found in environment variables.")
 
-            return OpenAI(
-                api_key=api_key,
-                base_url="https://api.groq.com/openai/v1"
-            )
+            return OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
 
-        raise ValueError(
-            f"Unsupported LLM provider: {self.provider}"
-        )
-
+        raise ValueError(f"Unsupported LLM provider: {self.provider}")
 
     def generate_response(
-        self,
-        prompt: str,
-        temperature: float = None,
-        max_tokens: int = None
+        self, prompt: str, temperature: float = None, max_tokens: int = None
     ):
         """
         Generates a response from the configured LLM.
@@ -85,39 +73,24 @@ class LLMClient:
         if not prompt or not prompt.strip():
             raise ValueError("Prompt cannot be empty.")
 
-        temperature = (
-            temperature
-            if temperature is not None
-            else self.temperature
-        )
+        temperature = temperature if temperature is not None else self.temperature
 
-        max_tokens = (
-            max_tokens
-            if max_tokens is not None
-            else self.max_tokens
-        )
+        max_tokens = max_tokens if max_tokens is not None else self.max_tokens
 
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
+                messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
             )
 
             return {
                 "provider": self.provider,
                 "model": self.model,
                 "response": response.choices[0].message.content,
-                "usage": response.usage
+                "usage": response.usage,
             }
 
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to generate LLM response: {str(e)}"
-            ) from e
+            raise RuntimeError(f"Failed to generate LLM response: {str(e)}") from e

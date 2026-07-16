@@ -4,6 +4,7 @@ from src.config.configuration import ConfigurationManager
 
 from datetime import datetime
 
+
 class PromptManager:
     """
     Creates structured prompts for the Business Advisor.
@@ -149,11 +150,7 @@ class PromptManager:
     Provide clear explanations and actionable recommendations while remaining factual and objective.
     """
 
-
-    def _format_business_context(
-        self,
-        business_context: dict
-    ):
+    def _format_business_context(self, business_context: dict):
         """
         Formats the business context into a readable JSON string.
 
@@ -168,16 +165,9 @@ class PromptManager:
             Formatted business context.
         """
 
-        return json.dumps(
-            business_context,
-            separators=(",", ":"),
-            default=str
-        )
+        return json.dumps(business_context, separators=(",", ":"), default=str)
 
-    def get_summary_prompt(
-        self,
-        business_context: dict
-    ):
+    def get_summary_prompt(self, business_context: dict):
         """
         Creates an executive summary prompt.
 
@@ -192,9 +182,7 @@ class PromptManager:
             Complete prompt for summary generation.
         """
 
-        formatted_context = self._format_business_context(
-            business_context
-        )
+        formatted_context = self._format_business_context(business_context)
 
         return f"""
     {self._get_system_prompt()}
@@ -222,12 +210,7 @@ class PromptManager:
         Limit the summary to a maximum of {self.max_summary_sentences} sentences.
         """
 
-
-    def get_explanation_prompt(
-        self,
-        business_context: dict,
-        manager_query: str
-    ):
+    def get_explanation_prompt(self, business_context: dict, manager_query: str):
         """
         Creates a prompt for explaining business forecasts.
 
@@ -245,9 +228,7 @@ class PromptManager:
             Complete explanation prompt.
         """
 
-        formatted_context = self._format_business_context(
-            business_context
-        )
+        formatted_context = self._format_business_context(business_context)
 
         return f"""
     {self._get_system_prompt()}
@@ -280,11 +261,7 @@ class PromptManager:
     - If the Business Context is insufficient to answer the question, clearly state what additional information is required.
     """
 
-
-    def get_recommendation_prompt(
-        self,
-        business_context: dict
-    ):
+    def get_recommendation_prompt(self, business_context: dict):
         """
         Creates a prompt for generating business recommendations.
 
@@ -299,9 +276,7 @@ class PromptManager:
             Complete recommendation prompt.
         """
 
-        formatted_context = self._format_business_context(
-            business_context
-        )
+        formatted_context = self._format_business_context(business_context)
 
         return f"""
     {self._get_system_prompt()}
@@ -332,12 +307,7 @@ class PromptManager:
     Provide no more than {self.max_recommendations} recommendations.
     """
 
-
-    def get_chat_prompt(
-        self,
-        business_context: dict,
-        manager_query: str
-    ):
+    def get_chat_prompt(self, business_context: dict, manager_query: str):
         """
         Creates a prompt for interactive business conversations.
 
@@ -355,9 +325,7 @@ class PromptManager:
             Complete chat prompt.
         """
 
-        formatted_context = self._format_business_context(
-            business_context
-        )
+        formatted_context = self._format_business_context(business_context)
 
         return f"""
     {self._get_system_prompt()}
@@ -391,12 +359,8 @@ class PromptManager:
     - Do not mention machine learning models, SHAP values, feature engineering, or internal calculations.
     """
 
-    
     def get_scenario_simulation_prompt(
-        self,
-        original_context: dict,
-        simulated_context: dict,
-        manager_query: str
+        self, original_context: dict, simulated_context: dict, manager_query: str
     ):
         """
         Creates a prompt for explaining scenario simulation results.
@@ -418,13 +382,9 @@ class PromptManager:
             Complete scenario simulation prompt.
         """
 
-        original_context = self._format_business_context(
-            original_context
-        )
+        original_context = self._format_business_context(original_context)
 
-        simulated_context = self._format_business_context(
-            simulated_context
-        )
+        simulated_context = self._format_business_context(simulated_context)
 
         return f"""
     {self._get_system_prompt()}
@@ -462,19 +422,13 @@ class PromptManager:
 
     Do not invent assumptions or mention machine learning models.
     """
-        
 
-    def get_report_prompt(
-        self,
-        business_context: dict
-    ):
+    def get_report_prompt(self, business_context: dict):
         """
         Creates a prompt for generating a business report.
         """
 
-        formatted_context = self._format_business_context(
-            business_context
-        )
+        formatted_context = self._format_business_context(business_context)
 
         return f"""
     {self._get_system_prompt()}
@@ -503,18 +457,12 @@ class PromptManager:
     Use clear business language suitable for management.
     """
 
-
-    def get_weekly_summary_prompt(
-        self,
-        business_context: dict
-    ):
+    def get_weekly_summary_prompt(self, business_context: dict):
         """
         Creates a prompt for generating a weekly forecast summary.
         """
 
-        formatted_context = self._format_business_context(
-            business_context
-        )
+        formatted_context = self._format_business_context(business_context)
 
         return f"""
     {self._get_system_prompt()}
@@ -542,18 +490,12 @@ class PromptManager:
     Keep the summary concise and suitable for retail managers.
     """
 
-
-    def get_recursive_forecast_prompt(
-        self,
-        business_context: dict
-    ):
+    def get_recursive_forecast_prompt(self, business_context: dict):
         """
         Creates a prompt for explaining recursive forecasting results.
         """
 
-        formatted_context = self._format_business_context(
-            business_context
-        )
+        formatted_context = self._format_business_context(business_context)
 
         return f"""
     {self._get_system_prompt()}
@@ -582,12 +524,8 @@ class PromptManager:
     Do not invent assumptions or mention machine learning models.
     """
 
+    def get_prediction_request_prompt(self, manager_request: str):
 
-    def get_prediction_request_prompt(
-        self,
-        manager_request: str
-    ):
-        
         today = datetime.today().date()
 
         """

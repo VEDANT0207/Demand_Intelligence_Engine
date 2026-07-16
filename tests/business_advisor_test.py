@@ -1,6 +1,5 @@
 from src.components.business_advisor import BusinessAdvisor
 
-
 advisor = BusinessAdvisor()
 
 
@@ -10,7 +9,7 @@ business_context = {
     "promotion": True,
     "competition": False,
     "confidence": "High",
-    "trend": "Increasing demand"
+    "trend": "Increasing demand",
 }
 
 
@@ -35,8 +34,7 @@ print("EXPLANATION")
 print("=" * 80)
 
 response = advisor.explain_prediction(
-    business_context,
-    "Why are tomorrow's sales expected to increase?"
+    business_context, "Why are tomorrow's sales expected to increase?"
 )
 
 print(response["response"])
@@ -47,8 +45,7 @@ print("CHAT")
 print("=" * 80)
 
 response = advisor.answer_question(
-    business_context,
-    "What should I prepare for tomorrow?"
+    business_context, "What should I prepare for tomorrow?"
 )
 
 print(response["response"])
@@ -58,9 +55,7 @@ print("\n" + "=" * 80)
 print("REPORT")
 print("=" * 80)
 
-response = advisor.generate_report(
-    business_context
-)
+response = advisor.generate_report(business_context)
 
 print(response["response"])
 
@@ -69,9 +64,7 @@ print("\n" + "=" * 80)
 print("WEEKLY SUMMARY")
 print("=" * 80)
 
-response = advisor.generate_weekly_summary(
-    business_context
-)
+response = advisor.generate_weekly_summary(business_context)
 
 print(response["response"])
 
@@ -80,9 +73,7 @@ print("\n" + "=" * 80)
 print("RECURSIVE FORECAST")
 print("=" * 80)
 
-response = advisor.explain_recursive_forecast(
-    business_context
-)
+response = advisor.explain_recursive_forecast(business_context)
 
 print(response["response"])
 
@@ -97,13 +88,11 @@ simulated_context = {
     "promotion": True,
     "competition": False,
     "confidence": "High",
-    "trend": "Strong increase"
+    "trend": "Strong increase",
 }
 
 response = advisor.simulate_scenario(
-    business_context,
-    simulated_context,
-    "What happens if promotion is enabled?"
+    business_context, simulated_context, "What happens if promotion is enabled?"
 )
 
 print(response["response"])

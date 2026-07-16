@@ -6,7 +6,7 @@ business_context = {
     "predicted_sales": 12000,
     "predicted_customers": 350,
     "promotion": True,
-    "confidence": "High"
+    "confidence": "High",
 }
 
 print("=" * 80)
@@ -19,10 +19,7 @@ print(pm.get_recommendation_prompt(business_context))
 
 print("=" * 80)
 print("CHAT")
-print(pm.get_chat_prompt(
-    business_context,
-    "Why is demand increasing?"
-))
+print(pm.get_chat_prompt(business_context, "Why is demand increasing?"))
 
 print("=" * 80)
 print("REPORT")
@@ -38,6 +35,8 @@ print(pm.get_recursive_forecast_prompt(business_context))
 
 print("=" * 80)
 print("PARSER")
-print(pm.get_prediction_request_prompt(
-    "Predict sales for Store 15 tomorrow with promotion."
-))
+print(
+    pm.get_prediction_request_prompt(
+        "Predict sales for Store 15 tomorrow with promotion."
+    )
+)

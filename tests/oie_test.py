@@ -9,7 +9,7 @@ business_request = {
     "Promo": 1,
     "Open": 1,
     "StateHoliday": "0",
-    "SchoolHoliday": 0
+    "SchoolHoliday": 0,
 }
 
 # Generate prediction
@@ -20,16 +20,11 @@ pipeline = PredictionPipeline()
 prediction_df = pipeline.predict(feature_df)
 
 # Historical data
-store_history_df = prediction_manager.get_store_history(
-    business_request["Store"]
-)
+store_history_df = prediction_manager.get_store_history(business_request["Store"])
 
 # Operational Intelligence
 oie = OperationalIntelligenceEngine()
 
-metrics = oie._calculate_demand_metrics(
-    prediction_df,
-    store_history_df
-)
+metrics = oie._calculate_demand_metrics(prediction_df, store_history_df)
 
 print(metrics)

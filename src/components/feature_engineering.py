@@ -55,7 +55,6 @@ class FeatureEngineering:
             dtype={"StateHoliday": str},
         )
 
-
     def create_temporal_features(self) -> None:
         """
         Create temporal features from the Date column.
@@ -90,7 +89,6 @@ class FeatureEngineering:
         self.df["IsQuarterStart"] = date.dt.is_quarter_start.astype(int)
         self.df["IsQuarterEnd"] = date.dt.is_quarter_end.astype(int)
 
-
     def create_competition_features(self) -> None:
         """
         Create competition-related features.
@@ -104,14 +102,14 @@ class FeatureEngineering:
 
         # Handle missing competition opening information
 
-        self.df["CompetitionOpenSinceMonth"] = (
-            self.df["CompetitionOpenSinceMonth"].fillna(1)
-        )
+        self.df["CompetitionOpenSinceMonth"] = self.df[
+            "CompetitionOpenSinceMonth"
+        ].fillna(1)
 
-        self.df["CompetitionOpenSinceYear"] = (
-            self.df["CompetitionOpenSinceYear"].fillna(1900)
-        )
-  
+        self.df["CompetitionOpenSinceYear"] = self.df[
+            "CompetitionOpenSinceYear"
+        ].fillna(1900)
+
         # Create competition opening date
         self.df["CompetitionOpenDate"] = pd.to_datetime(
             dict(
@@ -125,16 +123,8 @@ class FeatureEngineering:
         # Calculate competition age in months
 
         self.df["CompetitionAgeMonths"] = (
-            (
-                self.df["Date"].dt.year
-                - self.df["CompetitionOpenDate"].dt.year
-            )
-            * 12
-            + (
-                self.df["Date"].dt.month
-                - self.df["CompetitionOpenDate"].dt.month
-            )
-        )
+            self.df["Date"].dt.year - self.df["CompetitionOpenDate"].dt.year
+        ) * 12 + (self.df["Date"].dt.month - self.df["CompetitionOpenDate"].dt.month)
 
         # Indicator for whether competition opening date is known
 
@@ -144,9 +134,9 @@ class FeatureEngineering:
 
         # Indicator for whether the competitor is active
 
-        self.df["CompetitionActive"] = (
-            self.df["CompetitionAgeMonths"] >= 0
-        ).astype(int)
+        self.df["CompetitionActive"] = (self.df["CompetitionAgeMonths"] >= 0).astype(
+            int
+        )
 
         # Replace negative competition ages with zero
 
@@ -154,7 +144,6 @@ class FeatureEngineering:
             self.df["CompetitionAgeMonths"] < 0,
             "CompetitionAgeMonths",
         ] = 0
-
 
     def create_promo_features(self) -> None:
         """
@@ -168,13 +157,9 @@ class FeatureEngineering:
 
         # Handle missing Promo2 information
 
-        self.df["Promo2SinceWeek"] = (
-            self.df["Promo2SinceWeek"].fillna(1)
-        )
+        self.df["Promo2SinceWeek"] = self.df["Promo2SinceWeek"].fillna(1)
 
-        self.df["Promo2SinceYear"] = (
-            self.df["Promo2SinceYear"].fillna(1900)
-        )
+        self.df["Promo2SinceYear"] = self.df["Promo2SinceYear"].fillna(1900)
 
         # Create Promo2 start date
 
@@ -189,22 +174,12 @@ class FeatureEngineering:
 
         # Calculate Promo2 age in months
         self.df["Promo2AgeMonths"] = (
-            (
-                self.df["Date"].dt.year
-                - self.df["Promo2StartDate"].dt.year
-            )
-            * 12
-            + (
-                self.df["Date"].dt.month
-                - self.df["Promo2StartDate"].dt.month
-            )
-        )
+            self.df["Date"].dt.year - self.df["Promo2StartDate"].dt.year
+        ) * 12 + (self.df["Date"].dt.month - self.df["Promo2StartDate"].dt.month)
 
         # Indicator for whether Promo2 is active
 
-        self.df["Promo2Active"] = (
-            self.df["Promo2AgeMonths"] >= 0
-        ).astype(int)
+        self.df["Promo2Active"] = (self.df["Promo2AgeMonths"] >= 0).astype(int)
 
         # Replace negative Promo2 ages with zero
 
@@ -212,7 +187,6 @@ class FeatureEngineering:
             self.df["Promo2AgeMonths"] < 0,
             "Promo2AgeMonths",
         ] = 0
-
 
     def encode_features(self) -> None:
         """
@@ -235,7 +209,6 @@ class FeatureEngineering:
             dtype=int,
         )
 
-    
     def create_lag_features(self) -> None:
         """
         Create historical sales lag features.
@@ -248,19 +221,12 @@ class FeatureEngineering:
 
         # Ensure chronological ordering within each store
 
-        self.df = self.df.sort_values(
-            by=["Store", "Date"]
-        )
+        self.df = self.df.sort_values(by=["Store", "Date"])
 
         # Create lag features
 
         for lag in [7, 14, 28]:
-            self.df[f"Sales_Lag_{lag}"] = (
-                self.df
-                .groupby("Store")["Sales"]
-                .shift(lag)
-            )
-
+            self.df[f"Sales_Lag_{lag}"] = self.df.groupby("Store")["Sales"].shift(lag)
 
     def create_rolling_features(self) -> None:
         """
@@ -275,28 +241,19 @@ class FeatureEngineering:
             - Sales_RollingStd_28
         """
 
-
         # Create rolling mean features
 
         for window in [7, 14, 28]:
-            self.df[f"Sales_RollingMean_{window}"] = (
-                self.df
-                .groupby("Store")["Sales"]
-                .transform(
-                    lambda x: x.shift(1).rolling(window).mean()
-                )
-            )
+            self.df[f"Sales_RollingMean_{window}"] = self.df.groupby("Store")[
+                "Sales"
+            ].transform(lambda x: x.shift(1).rolling(window).mean())
 
         # Create rolling standard deviation features
-        
+
         for window in [7, 14, 28]:
-            self.df[f"Sales_RollingStd_{window}"] = (
-                self.df
-                .groupby("Store")["Sales"]
-                .transform(
-                    lambda x: x.shift(1).rolling(window).std()
-                )
-            )
+            self.df[f"Sales_RollingStd_{window}"] = self.df.groupby("Store")[
+                "Sales"
+            ].transform(lambda x: x.shift(1).rolling(window).std())
 
     def create_customer_historical_features(self) -> None:
         """
@@ -317,36 +274,23 @@ class FeatureEngineering:
         # Customer Lag Features
 
         for lag in [7, 14, 28]:
-            self.df[f"Customers_Lag_{lag}"] = (
-                self.df
-                .groupby("Store")["Customers"]
-                .shift(lag)
-            )
-
+            self.df[f"Customers_Lag_{lag}"] = self.df.groupby("Store")[
+                "Customers"
+            ].shift(lag)
 
         # Customer Rolling Mean Features
 
         for window in [7, 14, 28]:
-            self.df[f"Customers_RollingMean_{window}"] = (
-                self.df
-                .groupby("Store")["Customers"]
-                .transform(
-                    lambda x: x.shift(1).rolling(window).mean()
-                )
-            )
+            self.df[f"Customers_RollingMean_{window}"] = self.df.groupby("Store")[
+                "Customers"
+            ].transform(lambda x: x.shift(1).rolling(window).mean())
 
         # Customer Rolling Standard Deviation Features
 
         for window in [7, 14, 28]:
-            self.df[f"Customers_RollingStd_{window}"] = (
-                self.df
-                .groupby("Store")["Customers"]
-                .transform(
-                    lambda x: x.shift(1).rolling(window).std()
-                )
-            )
-
-
+            self.df[f"Customers_RollingStd_{window}"] = self.df.groupby("Store")[
+                "Customers"
+            ].transform(lambda x: x.shift(1).rolling(window).std())
 
     def cleanup_data(self) -> None:
         """
@@ -362,9 +306,8 @@ class FeatureEngineering:
 
         # Fill missing competition distance values
 
-        self.df["CompetitionDistance"] = (
-            self.df["CompetitionDistance"]
-            .fillna(self.df["CompetitionDistance"].median())
+        self.df["CompetitionDistance"] = self.df["CompetitionDistance"].fillna(
+            self.df["CompetitionDistance"].median()
         )
 
         # Remove intermediate feature engineering columns
@@ -389,14 +332,12 @@ class FeatureEngineering:
 
         self.df.reset_index(drop=True, inplace=True)
 
-
         # Mark unknown competition history
 
         self.df.loc[
             self.df["CompetitionDateKnown"] == 0,
             "CompetitionAgeMonths",
         ] = -1
-
 
         # Mark stores without Promo2 history
 
@@ -420,7 +361,6 @@ class FeatureEngineering:
         self.df.to_csv(output_path, index=False)
 
         return output_path
-    
 
     def initiate_feature_engineering(self):
 
@@ -447,7 +387,6 @@ class FeatureEngineering:
         return output_path
 
 
-
 if __name__ == "__main__":
 
     config = ConfigurationManager().get_feature_engineering_config()
@@ -458,6 +397,3 @@ if __name__ == "__main__":
 
     print("Feature Engineering completed successfully!")
     print(f"Engineered dataset saved at:\n{output_path}")
-
-
-

@@ -4,37 +4,31 @@ import pandas as pd
 
 from xgboost import XGBRegressor
 
-from sklearn.metrics import (
-    mean_absolute_error,
-    root_mean_squared_error,
-    r2_score
-)
+from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_score
 
 from src.logger.logger import logging
 from src.config.configuration import ConfigurationManager
+
 
 class ModelTrainer:
     """
     Handles training of the two-stage XGBoost models.
     """
+
     SPLIT_DATE = "2015-06-01"
 
     # Customer Model
     # Features to Drop
     CUSTOMER_DROP_COLUMNS = [
-
         "Sales",
         "Customers",
         "Date",
-
         "Sales_Lag_7",
         "Sales_Lag_14",
         "Sales_Lag_28",
-
         "Sales_RollingMean_7",
         "Sales_RollingMean_14",
         "Sales_RollingMean_28",
-
         "Sales_RollingStd_7",
         "Sales_RollingStd_14",
         "Sales_RollingStd_28",
@@ -42,20 +36,14 @@ class ModelTrainer:
 
     # Sales Model
 
-    SALES_DROP_COLUMNS = [
-
-        "Sales",
-        "Customers",
-        "Date",
-        "Open"
-    ]
+    SALES_DROP_COLUMNS = ["Sales", "Customers", "Date", "Open"]
 
     PREDICTED_CUSTOMERS_COLUMN = "Predicted_Customers"
 
     def __init__(self, config):
         self.config = config
 
-    # Complete dataset
+        # Complete dataset
         self.data = None
 
         # Split datasets
@@ -91,23 +79,14 @@ class ModelTrainer:
         logging.info("Loading engineered dataset...")
 
         self.data = pd.read_csv(
-            self.config["engineered_data_path"],
-            parse_dates=["Date"]
+            self.config["engineered_data_path"], parse_dates=["Date"]
         )
 
-        self.data.sort_values(
-            by=["Store", "Date"],
-            inplace=True
-        )
+        self.data.sort_values(by=["Store", "Date"], inplace=True)
 
-        self.data.reset_index(
-            drop=True,
-            inplace=True
-        )
+        self.data.reset_index(drop=True, inplace=True)
 
-        logging.info(
-            f"Dataset loaded successfully. Shape: {self.data.shape}"
-        )
+        logging.info(f"Dataset loaded successfully. Shape: {self.data.shape}")
 
     def split_data(self):
         """
@@ -118,34 +97,24 @@ class ModelTrainer:
 
         logging.info("Filtering open stores...")
 
-        open_df = self.data[
-            self.data["Open"] == 1
-        ].copy()
+        open_df = self.data[self.data["Open"] == 1].copy()
 
         logging.info(f"Open stores dataset shape: {open_df.shape}")
 
         logging.info("Performing chronological train-test split...")
 
-        train_df = open_df[
-            open_df["Date"] < self.SPLIT_DATE
-        ].copy()
+        train_df = open_df[open_df["Date"] < self.SPLIT_DATE].copy()
 
-        test_df = open_df[
-            open_df["Date"] >= self.SPLIT_DATE
-        ].copy()
+        test_df = open_df[open_df["Date"] >= self.SPLIT_DATE].copy()
 
         # Store complete datasets for later use
         self.train_df = train_df
         self.test_df = test_df
 
         # Customer Model Features
-        self.X_train = self.train_df.drop(
-            columns=self.CUSTOMER_DROP_COLUMNS
-        )
+        self.X_train = self.train_df.drop(columns=self.CUSTOMER_DROP_COLUMNS)
 
-        self.X_test = self.test_df.drop(
-            columns=self.CUSTOMER_DROP_COLUMNS
-        )
+        self.X_test = self.test_df.drop(columns=self.CUSTOMER_DROP_COLUMNS)
 
         # Customer Targets
         self.y_customer_train = self.train_df["Customers"]
@@ -180,24 +149,18 @@ class ModelTrainer:
         logging.info("Training Customer Demand Model...")
 
         self.customer_model = XGBRegressor(
-
             n_estimators=300,
             learning_rate=0.05,
             max_depth=8,
             subsample=0.8,
             colsample_bytree=0.8,
             random_state=42,
-            n_jobs=-1
-
+            n_jobs=-1,
         )
 
-        self.customer_model.fit(
-            self.X_train,
-            self.y_customer_train
-        )
+        self.customer_model.fit(self.X_train, self.y_customer_train)
 
     logging.info("Customer model trained successfully.")
-
 
     def generate_customer_predictions(self):
         """
@@ -208,17 +171,16 @@ class ModelTrainer:
         logging.info("Generating customer predictions...")
 
         # Training predictions
-        self.train_df[self.PREDICTED_CUSTOMERS_COLUMN] = (
-            self.customer_model.predict(self.X_train)
+        self.train_df[self.PREDICTED_CUSTOMERS_COLUMN] = self.customer_model.predict(
+            self.X_train
         )
 
         # Testing predictions
-        self.test_df[self.PREDICTED_CUSTOMERS_COLUMN] = (
-            self.customer_model.predict(self.X_test)
+        self.test_df[self.PREDICTED_CUSTOMERS_COLUMN] = self.customer_model.predict(
+            self.X_test
         )
 
         logging.info("Customer predictions generated successfully.")
-
 
     def train_sales_model(self):
         """
@@ -228,18 +190,13 @@ class ModelTrainer:
 
         logging.info("Preparing sales model features...")
 
-        self.X_sales_train = self.train_df.drop(
-            columns=self.SALES_DROP_COLUMNS
-        )
+        self.X_sales_train = self.train_df.drop(columns=self.SALES_DROP_COLUMNS)
 
-        self.X_sales_test = self.test_df.drop(
-            columns=self.SALES_DROP_COLUMNS
-        )
+        self.X_sales_test = self.test_df.drop(columns=self.SALES_DROP_COLUMNS)
 
         logging.info("Training Sales Prediction Model...")
 
         self.sales_model = XGBRegressor(
-
             n_estimators=500,
             learning_rate=0.03,
             max_depth=8,
@@ -248,18 +205,12 @@ class ModelTrainer:
             min_child_weight=1,
             gamma=0.1,
             random_state=42,
-            n_jobs=-1
-
+            n_jobs=-1,
         )
 
-        self.sales_model.fit(
-            self.X_sales_train,
-            self.y_sales_train
-        )
+        self.sales_model.fit(self.X_sales_train, self.y_sales_train)
 
         logging.info("Sales model trained successfully.")
-
-
 
     def evaluate_models(self):
         """
@@ -270,65 +221,27 @@ class ModelTrainer:
 
         # Customer Model Evaluation
 
-        customer_predictions = self.customer_model.predict(
-            self.X_test
-        )
+        customer_predictions = self.customer_model.predict(self.X_test)
 
         customer_metrics = {
-
-            "MAE": mean_absolute_error(
-                self.y_customer_test,
-                customer_predictions
-            ),
-
-            "RMSE": root_mean_squared_error(
-                self.y_customer_test,
-                customer_predictions
-            ),
-
-            "R2": r2_score(
-                self.y_customer_test,
-                customer_predictions
-            )
-
+            "MAE": mean_absolute_error(self.y_customer_test, customer_predictions),
+            "RMSE": root_mean_squared_error(self.y_customer_test, customer_predictions),
+            "R2": r2_score(self.y_customer_test, customer_predictions),
         }
 
         # Sales Model Evaluation
 
-
-        sales_predictions = self.sales_model.predict(
-            self.X_sales_test
-        )
+        sales_predictions = self.sales_model.predict(self.X_sales_test)
 
         sales_metrics = {
-
-            "MAE": mean_absolute_error(
-                self.y_sales_test,
-                sales_predictions
-            ),
-
-            "RMSE": root_mean_squared_error(
-                self.y_sales_test,
-                sales_predictions
-            ),
-
-            "R2": r2_score(
-                self.y_sales_test,
-                sales_predictions
-            )
-
+            "MAE": mean_absolute_error(self.y_sales_test, sales_predictions),
+            "RMSE": root_mean_squared_error(self.y_sales_test, sales_predictions),
+            "R2": r2_score(self.y_sales_test, sales_predictions),
         }
 
         logging.info("Model evaluation completed successfully.")
 
-        return {
-
-            "customer_model": customer_metrics,
-
-            "sales_model": sales_metrics
-
-        }
-
+        return {"customer_model": customer_metrics, "sales_model": sales_metrics}
 
     def save_models(self):
         """
@@ -337,30 +250,22 @@ class ModelTrainer:
 
         logging.info("Saving trained models...")
 
-        joblib.dump(
-            self.customer_model,
-            self.config["customer_model_path"]
-        )
+        joblib.dump(self.customer_model, self.config["customer_model_path"])
 
-        joblib.dump(
-            self.sales_model,
-            self.config["sales_model_path"]
-        )
+        joblib.dump(self.sales_model, self.config["sales_model_path"])
 
-            # Save customer model feature columns
+        # Save customer model feature columns
         joblib.dump(
-            self.X_train.columns.tolist(),
-            self.config["customer_training_columns_path"]
+            self.X_train.columns.tolist(), self.config["customer_training_columns_path"]
         )
 
         # Save sales model feature columns
         joblib.dump(
             self.X_sales_train.columns.tolist(),
-            self.config["sales_training_columns_path"]
+            self.config["sales_training_columns_path"],
         )
 
         logging.info("Models saved successfully.")
-
 
     def initiate_model_training(self):
         """
@@ -386,7 +291,7 @@ class ModelTrainer:
         logging.info("Model Training Pipeline Completed Successfully")
 
         return metrics
-    
+
 
 from src.config.configuration import ConfigurationManager
 from src.components.model_trainer import ModelTrainer
