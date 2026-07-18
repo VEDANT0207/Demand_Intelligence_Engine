@@ -67,9 +67,9 @@ def generate_forecast_response(
         "summary": business_context,
         "llm_summary": llm_summary,
         "graphs": {
-            "sales_plot": str(visualizer.config["sales_forecast_plot_path"]),
-            "customer_plot": str(visualizer.config["customer_forecast_plot_path"]),
-            "weekly_sales_plot": str(visualizer.config["weekly_sales_plot_path"]),
+            "sales_plot": "/artifacts/forecast_visualizations/sales_forecast.png",
+            "customer_plot": "/artifacts/forecast_visualizations/customer_forecast.png",
+            "weekly_sales_plot": "/artifacts/forecast_visualizations/weekly_sales_forecast.png",
         },
     }
 
