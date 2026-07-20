@@ -49,10 +49,8 @@ class FeatureEngineering:
             None
         """
 
-        self.df = pd.read_csv(
+        self.df = pd.read_parquet(
             self.config["merged_data_path"],
-            parse_dates=["Date"],
-            dtype={"StateHoliday": str},
         )
 
     def create_temporal_features(self) -> None:
@@ -358,7 +356,7 @@ class FeatureEngineering:
             exist_ok=True,
         )
 
-        self.df.to_csv(output_path, index=False)
+        self.df.to_parquet(output_path, index=False)
 
         return output_path
 

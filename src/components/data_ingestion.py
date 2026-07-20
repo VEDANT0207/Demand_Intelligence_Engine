@@ -54,14 +54,17 @@ class DataIngestion:
         """
         Read the raw training and store datasets.
 
+        Shifting dates by 11 years to make it feel more realistic
+
         Returns:
             tuple[pd.DataFrame, pd.DataFrame]:
                 Training DataFrame and Store DataFrame.
+
         """
 
-        train_df = pd.read_csv(
-            self.config["train_data_path"], dtype={"StateHoliday": str}
-        )
+        train_df = pd.read_csv(self.config["train_data_path"], dtype={"StateHoliday": str})
+        train_df["Date"] = pd.to_datetime(train_df["Date"]) + pd.DateOffset(years=11)
+        
         store_df = pd.read_csv(self.config["store_data_path"])
 
         return train_df, store_df
@@ -158,7 +161,7 @@ class DataIngestion:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Save merged dataset
-        merged_df.to_csv(output_path, index=False)
+        merged_df.to_parquet(output_path, index=False)
 
         return output_path
 

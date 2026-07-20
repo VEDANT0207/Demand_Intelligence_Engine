@@ -8,7 +8,7 @@ mlruns/
 mlflow.db
 .ipynb_checkpoints/
 
-data/processed/
+data/processed/*.csv
 artifacts/
 logs/
 mlflow.db

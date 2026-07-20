@@ -1,9 +1,10 @@
 import os
 import joblib
 import pandas as pd
+import mlflow
+import mlflow.xgboost
 
 from xgboost import XGBRegressor
-
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_score
 
 from src.logger.logger import logging
@@ -15,7 +16,7 @@ class ModelTrainer:
     Handles training of the two-stage XGBoost models.
     """
 
-    SPLIT_DATE = "2015-06-01"
+    SPLIT_DATE = "2026-06-01"
 
     # Customer Model
     # Features to Drop
@@ -35,7 +36,6 @@ class ModelTrainer:
     ]
 
     # Sales Model
-
     SALES_DROP_COLUMNS = ["Sales", "Customers", "Date", "Open"]
 
     PREDICTED_CUSTOMERS_COLUMN = "Predicted_Customers"
@@ -75,17 +75,12 @@ class ModelTrainer:
         """
         Loads the engineered dataset.
         """
-
         logging.info("Loading engineered dataset...")
-
-        self.data = pd.read_csv(
-            self.config["engineered_data_path"], parse_dates=["Date"]
+        self.data = pd.read_parquet(
+            self.config["engineered_data_path"]
         )
-
         self.data.sort_values(by=["Store", "Date"], inplace=True)
-
         self.data.reset_index(drop=True, inplace=True)
-
         logging.info(f"Dataset loaded successfully. Shape: {self.data.shape}")
 
     def split_data(self):
@@ -94,17 +89,13 @@ class ModelTrainer:
         Also prepares the feature matrices and target variables for the
         customer prediction model.
         """
-
         logging.info("Filtering open stores...")
-
         open_df = self.data[self.data["Open"] == 1].copy()
 
         logging.info(f"Open stores dataset shape: {open_df.shape}")
-
         logging.info("Performing chronological train-test split...")
 
         train_df = open_df[open_df["Date"] < self.SPLIT_DATE].copy()
-
         test_df = open_df[open_df["Date"] >= self.SPLIT_DATE].copy()
 
         # Store complete datasets for later use
@@ -113,73 +104,68 @@ class ModelTrainer:
 
         # Customer Model Features
         self.X_train = self.train_df.drop(columns=self.CUSTOMER_DROP_COLUMNS)
-
         self.X_test = self.test_df.drop(columns=self.CUSTOMER_DROP_COLUMNS)
 
         # Customer Targets
         self.y_customer_train = self.train_df["Customers"]
-
         self.y_customer_test = self.test_df["Customers"]
 
         # Sales Targets
         self.y_sales_train = self.train_df["Sales"]
-
         self.y_sales_test = self.test_df["Sales"]
 
         logging.info(
             f"Training Period : {self.train_df['Date'].min().date()} "
             f"to {self.train_df['Date'].max().date()}"
         )
-
         logging.info(
             f"Testing Period : {self.test_df['Date'].min().date()} "
             f"to {self.test_df['Date'].max().date()}"
         )
-
         logging.info(f"Training samples : {len(self.train_df)}")
         logging.info(f"Testing samples  : {len(self.test_df)}")
-
         logging.info("Data splitting completed successfully.")
 
     def train_customer_model(self):
         """
         Trains the customer demand prediction model.
         """
-
         logging.info("Training Customer Demand Model...")
 
-        self.customer_model = XGBRegressor(
-            n_estimators=300,
-            learning_rate=0.05,
-            max_depth=8,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            random_state=42,
-            n_jobs=-1,
-        )
+        # Hyperparameters
+        params = {
+            "n_estimators": 300,
+            "learning_rate": 0.05,
+            "max_depth": 8,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "random_state": 42,
+            "n_jobs": -1,
+        }
 
+        # Log hyperparameters to MLflow
+        for key, val in params.items():
+            mlflow.log_param(f"customer_{key}", val)
+
+        self.customer_model = XGBRegressor(**params)
         self.customer_model.fit(self.X_train, self.y_customer_train)
-
-    logging.info("Customer model trained successfully.")
+        logging.info("Customer model trained successfully.")
 
     def generate_customer_predictions(self):
         """
         Generates customer demand predictions and appends them
         as a feature for the sales prediction model.
         """
-
         logging.info("Generating customer predictions...")
 
         # Training predictions
         self.train_df[self.PREDICTED_CUSTOMERS_COLUMN] = self.customer_model.predict(
             self.X_train
         )
-
         # Testing predictions
         self.test_df[self.PREDICTED_CUSTOMERS_COLUMN] = self.customer_model.predict(
             self.X_test
         )
-
         logging.info("Customer predictions generated successfully.")
 
     def train_sales_model(self):
@@ -187,119 +173,117 @@ class ModelTrainer:
         Trains the final sales prediction model using
         predicted customers as an additional feature.
         """
-
         logging.info("Preparing sales model features...")
-
         self.X_sales_train = self.train_df.drop(columns=self.SALES_DROP_COLUMNS)
-
         self.X_sales_test = self.test_df.drop(columns=self.SALES_DROP_COLUMNS)
 
         logging.info("Training Sales Prediction Model...")
 
-        self.sales_model = XGBRegressor(
-            n_estimators=500,
-            learning_rate=0.03,
-            max_depth=8,
-            subsample=0.7,
-            colsample_bytree=0.8,
-            min_child_weight=1,
-            gamma=0.1,
-            random_state=42,
-            n_jobs=-1,
-        )
+        # Hyperparameters
+        params = {
+            "n_estimators": 500,
+            "learning_rate": 0.03,
+            "max_depth": 8,
+            "subsample": 0.7,
+            "colsample_bytree": 0.8,
+            "min_child_weight": 1,
+            "gamma": 0.1,
+            "random_state": 42,
+            "n_jobs": -1,
+        }
 
+        # Log hyperparameters to MLflow
+        for key, val in params.items():
+            mlflow.log_param(f"sales_{key}", val)
+
+        self.sales_model = XGBRegressor(**params)
         self.sales_model.fit(self.X_sales_train, self.y_sales_train)
-
         logging.info("Sales model trained successfully.")
 
     def evaluate_models(self):
         """
         Evaluates the customer and sales prediction models.
         """
-
         logging.info("Evaluating models...")
 
         # Customer Model Evaluation
-
         customer_predictions = self.customer_model.predict(self.X_test)
-
         customer_metrics = {
             "MAE": mean_absolute_error(self.y_customer_test, customer_predictions),
             "RMSE": root_mean_squared_error(self.y_customer_test, customer_predictions),
             "R2": r2_score(self.y_customer_test, customer_predictions),
         }
 
+        # Log customer metrics to MLflow
+        for name, value in customer_metrics.items():
+            mlflow.log_metric(f"customer_{name}", value)
+
         # Sales Model Evaluation
-
         sales_predictions = self.sales_model.predict(self.X_sales_test)
-
         sales_metrics = {
             "MAE": mean_absolute_error(self.y_sales_test, sales_predictions),
             "RMSE": root_mean_squared_error(self.y_sales_test, sales_predictions),
             "R2": r2_score(self.y_sales_test, sales_predictions),
         }
 
-        logging.info("Model evaluation completed successfully.")
+        # Log sales metrics to MLflow
+        for name, value in sales_metrics.items():
+            mlflow.log_metric(f"sales_{name}", value)
 
+        logging.info("Model evaluation completed successfully.")
         return {"customer_model": customer_metrics, "sales_model": sales_metrics}
 
     def save_models(self):
         """
-        Saves trained models and training columns.
+        Saves trained models and training columns locally and logs to MLflow.
         """
-
         logging.info("Saving trained models...")
 
+        # 1. Local Saves (Necessary for your API)
         joblib.dump(self.customer_model, self.config["customer_model_path"])
-
         joblib.dump(self.sales_model, self.config["sales_model_path"])
 
         # Save customer model feature columns
         joblib.dump(
             self.X_train.columns.tolist(), self.config["customer_training_columns_path"]
         )
-
         # Save sales model feature columns
         joblib.dump(
             self.X_sales_train.columns.tolist(),
             self.config["sales_training_columns_path"],
         )
 
+        # 2. MLflow Log Models
+        mlflow.xgboost.log_model(self.customer_model, "customer_model")
+        mlflow.xgboost.log_model(self.sales_model, "sales_model")
+
         logging.info("Models saved successfully.")
 
     def initiate_model_training(self):
         """
-        Executes the complete model training pipeline.
+        Executes the complete model training pipeline inside an MLflow run.
         """
-
         logging.info("Starting Model Training Pipeline")
 
-        self.load_data()
+        # Set MLflow experiment name
+        mlflow.set_experiment("Rossmann_Demand_Forecasting")
 
-        self.split_data()
-
-        self.train_customer_model()
-
-        self.generate_customer_predictions()
-
-        self.train_sales_model()
-
-        metrics = self.evaluate_models()
-
-        self.save_models()
+        # Start tracking run
+        with mlflow.start_run(run_name="two_stage_xgb_pipeline"):
+            self.load_data()
+            self.split_data()
+            self.train_customer_model()
+            self.generate_customer_predictions()
+            self.train_sales_model()
+            metrics = self.evaluate_models()
+            self.save_models()
 
         logging.info("Model Training Pipeline Completed Successfully")
-
         return metrics
 
 
-from src.config.configuration import ConfigurationManager
-from src.components.model_trainer import ModelTrainer
-
-config = ConfigurationManager().get_model_trainer_config()
-
-trainer = ModelTrainer(config)
-
-metrics = trainer.initiate_model_training()
-
-print(metrics)
+if __name__ == "__main__":
+    config = ConfigurationManager().get_model_trainer_config()
+    trainer = ModelTrainer(config)
+    metrics = trainer.initiate_model_training()
+    print("Training Metrics:", metrics)

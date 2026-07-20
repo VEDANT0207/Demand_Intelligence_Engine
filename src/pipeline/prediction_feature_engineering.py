@@ -34,12 +34,12 @@ class PredictionFeatureEngineering:
         required for inference feature engineering.
         """
 
-        self.historical_data = pd.read_csv(
-            self.config["historical_data_path"], parse_dates=["Date"]
+        self.historical_data = pd.read_parquet(
+            self.config["historical_data_path"]
         )
 
-        self.calendar_data = pd.read_csv(
-            self.config["calendar_data_path"], parse_dates=["Date"]
+        self.calendar_data = pd.read_parquet(
+            self.config["calendar_data_path"]
         )
 
         self.calendar_data["DayOfWeek"] = self.calendar_data["Date"].dt.dayofweek + 1

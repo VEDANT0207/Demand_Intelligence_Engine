@@ -19,7 +19,7 @@ class ConfigurationManager:
             "merged_data_path": self.project_root
             / "data"
             / "processed"
-            / "merged_data.csv",
+            / "merged_data.parquet",
         }
 
     def get_feature_engineering_config(self):
@@ -32,11 +32,11 @@ class ConfigurationManager:
             "merged_data_path": self.project_root
             / "data"
             / "processed"
-            / "merged_data.csv",
+            / "merged_data.parquet",
             "engineered_data_path": self.project_root
             / "data"
             / "processed"
-            / "engineered_data.csv",
+            / "engineered_data.parquet",
         }
 
     def get_model_trainer_config(self):
@@ -54,7 +54,7 @@ class ConfigurationManager:
             "engineered_data_path": self.project_root
             / "data"
             / "processed"
-            / "engineered_data.csv",
+            / "engineered_data.parquet",
             "customer_model_path": model_dir / "customer_model.pkl",
             "sales_model_path": model_dir / "sales_model.pkl",
             "customer_training_columns_path": model_dir
@@ -87,8 +87,8 @@ class ConfigurationManager:
 
         return {
             # Historical data used for lag and rolling features
-            "historical_data_path": processed_dir / "engineered_data.csv",
-            "calendar_data_path": processed_dir / "merged_data.csv",
+            "historical_data_path": processed_dir / "engineered_data.parquet",
+            "calendar_data_path": processed_dir / "merged_data.parquet",
             # Store master information
             "store_data_path": raw_dir / "store.csv",
         }

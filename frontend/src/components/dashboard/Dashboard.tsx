@@ -47,7 +47,7 @@ export const Dashboard: React.FC = () => {
 
     // Check if user has a preferred store or a previously predicted store
     const savedStore = localStorage.getItem('userPreferredStore') || localStorage.getItem('lastPredictedStore');
-    const savedDate = localStorage.getItem('lastPredictedDate') || '2015-08-01';
+    const savedDate = localStorage.getItem('lastPredictedDate') || '2026-08-01';
 
     if (savedStore) {
       const fetchDashboardForecast = async () => {

@@ -57,7 +57,7 @@ export const PredictionWorkspace: React.FC = () => {
   const [inputMethod, setInputMethod] = useState<'structured' | 'nlp'>('structured');
   const [nlpQuery, setNlpQuery] = useState('');
   const [store, setStore] = useState(1);
-  const [date, setDate] = useState('2015-08-01');
+  const [date, setDate] = useState('2026-08-01');
   const [promo, setPromo] = useState(1);
   const [open, setOpen] = useState(1);
 
