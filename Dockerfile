@@ -22,15 +22,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY src/ ./src/
 COPY data/models/ ./data/models/
-COPY data/processed/ ./data/processed/
+
+# COPY AND RENAME THE DEMO FILE FOR PRODUCTION
+COPY data/processed/engineered_data_demo.parquet ./data/processed/engineered_data.parquet
+COPY data/processed/merged_data_demo.parquet ./data/processed/merged_data.parquet
+
 COPY data/raw/rossmann/store.csv ./data/raw/rossmann/store.csv
 
-
-# CREATE THE ARTIFACTS FOLDER HERE
+# Create empty artifacts folder
 RUN mkdir -p artifacts
 
-# Expose the API port
-EXPOSE 7860
+# Expose the API port back to 8000 for Render
+EXPOSE 8000
 
 # Start the FastAPI server using Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
