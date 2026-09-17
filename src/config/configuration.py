@@ -159,7 +159,7 @@ class ConfigurationManager:
 
         return {
             "provider": "groq",
-            "model": "llama-3.3-70b-versatile",
+            "model": "llama-3.1-8b-instant",
             "temperature": 0.2,
             "max_tokens": 1000,
         }
