@@ -38,7 +38,7 @@ class LLMClient:
 
         if self.provider == "groq":
 
-            api_key = os.getenv("GROQ_API_KEY")
+            api_key = os.getenv("GROQ_API_KEY", "").strip().strip('"').strip("'")
 
             if not api_key:
                 raise ValueError("GROQ_API_KEY not found in environment variables.")
@@ -66,7 +66,7 @@ class LLMClient:
 
         Returns
         -------
-        str
+        dict
             Generated response.
         """
 
@@ -77,20 +77,28 @@ class LLMClient:
 
         max_tokens = max_tokens if max_tokens is not None else self.max_tokens
 
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+        candidate_models = [self.model, "openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"]
+        seen = set()
+        unique_models = [m for m in candidate_models if m and not (m in seen or seen.add(m))]
 
-            return {
-                "provider": self.provider,
-                "model": self.model,
-                "response": response.choices[0].message.content,
-                "usage": response.usage,
-            }
+        last_error = None
+        for candidate_model in unique_models:
+            try:
+                response = self.client.chat.completions.create(
+                    model=candidate_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
 
-        except Exception as e:
-            raise RuntimeError(f"Failed to generate LLM response: {str(e)}") from e
+                return {
+                    "provider": self.provider,
+                    "model": candidate_model,
+                    "response": response.choices[0].message.content,
+                    "usage": response.usage,
+                }
+            except Exception as e:
+                last_error = e
+                continue
+
+        raise RuntimeError(f"Failed to generate LLM response: {str(last_error)}") from last_error
